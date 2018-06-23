@@ -1,0 +1,41 @@
+---
+title: "SVM in R"
+author: "Krishna P Koirala"
+date: "6/23/2018"
+output:
+    md_document:
+     variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+rm(list = ls())
+head(iris)
+```
+
+```{r}
+library(e1071)
+```
+
+# Model Building
+
+```{r}
+model <- svm(Species ~ ., data = iris)
+summary(model)
+```
+
+Y- gamma in Svm model
+- This is the idea how far the decision boundary from the points. Lower the value of Y, more linear the decision boundry.
+which is good.
+
+
+# Tuning svm parameters Y and C
+
+```{r}
+#tune.result <- tune(svm, train.x = iris[1:4]
+```
+
