@@ -21,12 +21,25 @@ head(iris)
 library(e1071)
 ```
 
-# Model Building
+# Simple SVM Model Building, with out tuning
 
 ```{r}
 model <- svm(Species ~ ., data = iris)
 summary(model)
 ```
+
+# To predict the model simply use the predict function. Predicting the trained data itself
+
+```{r}
+pred.values <- predict(model, iris[1:4])
+```
+
+# Confusion matrix
+
+```{r}
+table(pred.values, iris[,5])
+```
+
 
 Y- gamma in Svm model
 - This is the idea how far the decision boundary from the points. Lower the value of Y, more linear the decision boundry.
@@ -34,8 +47,40 @@ which is good.
 
 
 # Tuning svm parameters Y and C
+Here we are going to train bunch of svm models and find which are best 
 
 ```{r}
-#tune.result <- tune(svm, train.x = iris[1:4]
+# tune() function tries lots of combination of C and Y and gives the pair which has low error rate
+tune.result <- tune(svm, train.x = iris[1:4], train.y = iris[, 5], kernel = 'radial', ranges = list(cost = c(0.1, 1, 10), gamma = c(0.5, 1, 2)))
 ```
+
+
+```{r}
+summary(tune.result)
+```
+
+```{r}
+tune.result <- tune(svm, train.x = iris[1:4], train.y = iris[, 5], kernel = 'radial', ranges = list(cost = c(0.5, 1, 1.5), gamma = c(0.1, 0.5, 0.7)))
+
+summary(tune.result)
+```
+
+Lets choose cost=1, gamma = 0.1 has the best performance. 
+We can try other combination of C and Y to get lower error.
+
+
+# Create model using those C and Y vallues
+
+
+```{r}
+# data is actually the train data if I have train test split
+tuned.svm <- svm(Species~., data = iris, kernel = 'radial', cost = 1, gamma = 0.1)
+summary(tuned.svm)
+```
+
+
+
+
+
+
 
