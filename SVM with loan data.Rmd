@@ -1,0 +1,190 @@
+---
+title: "SVM With Loan Data"
+author: "Krishna P Koirala"
+date: "6/25/2018"
+output:
+    md_document:
+     variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+rm(list = ls())
+loans <- read.csv("~/Desktop/Data Science with R, Python, SQL, Tableau/Data Science with R, Python --Udemy/Data Science with R/R-Course-HTML-Notes/R-for-Data-Science-and-Machine-Learning/Training Exercises/Machine Learning Projects/CSV files for ML Projects/loan_data.csv")
+```
+
+
+```{r}
+str(loans)
+```
+
+```{r}
+summary(loans)
+```
+
+# Change the data types of few columns to factor
+
+```{r}
+unique(loans$credit.policy)
+unique(loans$inq.last.6mths)
+unique(loans$delinq.2yrs)
+unique(loans$pub.rec)
+unique(loans$not.fully.paid)
+```
+
+
+# Convert to above variables to Categorical
+
+```{r}
+loans$credit.policy <- factor(loans$credit.policy)
+loans$inq.last.6mths <- factor(loans$inq.last.6mths)
+loans$delinq.2yrs <- factor(loans$delinq.2yrs)
+loans$pub.rec <- factor(loans$pub.rec)
+loans$not.fully.paid <- factor(loans$not.fully.paid)
+```
+
+
+# EDA
+
+```{r}
+library(ggplot2)
+p1 <- ggplot(aes(fico), data = loans) + geom_histogram(aes(fill = not.fully.paid), color = 'black', bins = 40, alpha = 0.5) + theme_classic()
+p1
+```
+
+# Histogram with my image on background
+
+
+```{r}
+image <- jpeg::readJPEG("~/Desktop/IMG_0458.JPG")
+```
+
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(jpeg, png, ggplot2, grid, neuropsychology)
+```
+
+
+
+```{r}
+ggplot(aes(fico), data = loans) +
+  ggtitle("Histogram with background")+
+  annotation_custom(rasterGrob(image, 
+                               width = unit(1,"npc"), 
+                               height = unit(1,"npc")), 
+                               -Inf, Inf, -Inf, Inf) +
+    geom_histogram(aes(fill = not.fully.paid), bins = 40, color = 'black', alpha = 0.1) + scale_fill_manual(values = c('green', 'red'))
+```
+
+
+```{r}
+ggplot(aes(factor(purpose)), data = loans) + geom_bar(aes(fill = not.fully.paid), position = 'dodge') + theme_classic()
+```
+
+
+```{r}
+ggplot(aes(int.rate, fico), data = loans) + geom_point(aes(color = not.fully.paid), alpha = 0.5)
+```
+
+# Using RcolorBrewer
+
+
+```{r}
+library(RColorBrewer)
+  ggplot(aes(int.rate, fico, color = not.fully.paid), data = loans) + 
+  geom_jitter(alpha = 1, size = 3/4) + scale_color_brewer(type = "div", 
+  palette = 7, direction = 1, 
+guide = guide_legend(title = 'not fully paid', reverse = TRUE, 
+                     override.aes = list(alpha = 1, size = 2))) + theme_dark() + 
+      ylab("Fico score") + xlab("Interest rate")
+```
+
+
+# SVM model Building
+
+# Train/Test split
+
+```{r}
+# not.fully.paid is the column we are trying to predict
+# filter is similar to subset()
+library(dplyr)
+library(caTools)
+set.seed(101)
+sample <- sample.split(loans$not.fully.paid, 0.7)
+train <- filter(loans, sample == TRUE)
+test <- filter(loans, sample==FALSE)
+```
+
+
+# Train the model 
+
+```{r}
+library(e1071)
+model<- svm(not.fully.paid ~., data = train)
+summary(model)
+```
+
+# predict the test data 
+
+```{r}
+#head(test[1:13])
+test$predicted <- predict(model, test)
+table(test$predicted, test$not.fully.paid)
+
+```
+
+# Model Tuning
+
+
+This confusion matrix gives really bad results.
+We need to tune the model by playing with 
+values of C and Y to make model nice.
+
+```{r}
+# This is the way to find out best C and Y pair for the model.
+# It takes time. 
+tune.result <- tune(svm, train.x = not.fully.paid~., data = train, kernel = 'radial', ranges = list(cost = c(100, 200), gamma = c(0.1)))
+
+summary(tune.result)
+```
+
+The error is quite low. We can play around the value of c and Y to make error more low.
+But for now we choose this is the best model and move forward.
+
+Now we gonna use C = 100, Y  =0.1 to make our tuned model
+
+```{r}
+tuned.model <- svm(not.fully.paid ~., data = train, cost = 100, gamma = 0.1)
+```
+
+```{r}
+summary(tuned.model)
+```
+
+# Predict test data using tuned model
+
+```{r}
+test$tuned.prediction <- predict(tuned.model, test)
+table(test$tuned.prediction, test$not.fully.paid)
+```
+
+
+```{r}
+# Accuracy
+accuracy = (102+2179)/(2179+102+234+358)
+accuracy
+precision = (102)/(358+102)
+precision
+Recall = (102)/(102+234)
+Recall
+```
+
+
+We can change value of C and Y 
+and again check acuraccy etc according to the need
+of our business. What metric should increased depends
+on the need of business.
